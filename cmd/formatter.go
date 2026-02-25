@@ -3,9 +3,10 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
+	"io"
+
 	"github.com/aswinkarthik/csvdiff/pkg/digest"
 	"github.com/fatih/color"
-	"io"
 )
 
 const (
@@ -14,10 +15,11 @@ const (
 	legacyJSONFormat = "legacy-json"
 	lineDiff         = "diff"
 	wordDiff         = "word-diff"
+	wordDiffAll      = "word-diff-all" // 追加
 	colorWords       = "color-words"
 )
 
-var allFormats = []string{rowmark, jsonFormat, legacyJSONFormat, lineDiff, wordDiff, colorWords}
+var allFormats = []string{rowmark, jsonFormat, legacyJSONFormat, lineDiff, wordDiff, wordDiffAll, colorWords}
 
 // Formatter can print the differences to stdout
 // and accompanying metadata to stderr
@@ -49,6 +51,8 @@ func (f *Formatter) Format(diff digest.Differences) error {
 		return f.lineDiff(diff)
 	case wordDiff:
 		return f.wordDiff(diff)
+	case wordDiffAll: // 追加
+		return f.wordDiffAll(diff)
 	case colorWords:
 		return f.colorWords(diff)
 	default:
@@ -211,17 +215,24 @@ func (f *Formatter) lineDiff(diff digest.Differences) error {
 	return nil
 }
 
+// word-diff-all 用のメソッドを追加
+func (f *Formatter) wordDiffAll(diff digest.Differences) error {
+	return f.wordLevelDiffs(diff, "[-%s-]", "{+%s+}", true)
+}
+
 // wordDiff is git-style --word-diff
+// 既存の wordDiff, colorWords の呼び出しを修正 (第4引数に false を追加)
 func (f *Formatter) wordDiff(diff digest.Differences) error {
-	return f.wordLevelDiffs(diff, "[-%s-]", "{+%s+}")
+	return f.wordLevelDiffs(diff, "[-%s-]", "{+%s+}", false)
 }
 
 // colorWords is git-style --color-words
 func (f *Formatter) colorWords(diff digest.Differences) error {
-	return f.wordLevelDiffs(diff, "%s", "%s")
+	return f.wordLevelDiffs(diff, "%s", "%s", false)
 }
 
-func (f *Formatter) wordLevelDiffs(diff digest.Differences, deletionFormat, additionFormat string) error {
+// wordLevelDiffs のシグネチャと実装を変更
+func (f *Formatter) wordLevelDiffs(diff digest.Differences, deletionFormat, additionFormat string, showUnchanged bool) error {
 	includes := f.ctx.GetIncludeColumnPositions()
 	if len(includes) <= 0 {
 		includes = f.ctx.GetValueColumns()
@@ -253,6 +264,15 @@ func (f *Formatter) wordLevelDiffs(diff digest.Differences, deletionFormat, addi
 	_, _ = fmt.Fprintln(f.stderr, blue("# Deletions (%d)", len(diff.Deletions)))
 	for _, deletion := range diff.Deletions {
 		_, _ = fmt.Fprintln(f.stdout, red(deletionFormat, includes.String(deletion, f.ctx.separator)))
+	}
+
+	// 関数の一番最後に Unchanged の出力を追加
+	if showUnchanged {
+		_, _ = fmt.Fprintln(f.stderr, blue("# Unchanged (%d)", len(diff.Unchanged)))
+		for _, unch := range diff.Unchanged {
+			// 一致する行は色や修飾子を付けずにそのまま出力
+			_, _ = fmt.Fprintln(f.stdout, includes.String(unch, f.ctx.separator))
+		}
 	}
 
 	return nil

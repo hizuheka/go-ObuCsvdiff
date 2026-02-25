@@ -11,6 +11,7 @@ const (
 	addition     messageType = iota
 	modification messageType = iota
 	deletion     messageType = iota
+	unchanged    messageType = iota // 追加
 )
 
 // Differences represents the differences
@@ -19,6 +20,7 @@ type Differences struct {
 	Additions     []Addition
 	Modifications []Modification
 	Deletions     []Deletion
+	Unchanged     []Unchanged // 追加
 }
 
 // Addition is a row appearing in delta but missing in base
@@ -33,6 +35,9 @@ type Modification struct {
 	Original []string
 	Current  []string
 }
+
+// Unchanged is a row present in both base and delta without changes
+type Unchanged []string // 追加
 
 type message struct {
 	original []string
@@ -62,6 +67,7 @@ func Diff(baseConfig, deltaConfig Config) (Differences, error) {
 	additions := make([]Addition, 0)
 	modifications := make([]Modification, 0)
 	deletions := make([]Deletion, 0)
+	unchangedRows := make([]Unchanged, 0) // 追加
 
 	msgChannel := streamDifferences(baseFileDigest, deltaDigestChannel)
 	for msg := range msgChannel {
@@ -72,6 +78,8 @@ func Diff(baseConfig, deltaConfig Config) (Differences, error) {
 			modifications = append(modifications, Modification{Original: msg.original, Current: msg.current})
 		case deletion:
 			deletions = append(deletions, msg.current)
+		case unchanged: // 追加
+			unchangedRows = append(unchangedRows, msg.current)
 		default:
 			continue
 		}
@@ -81,7 +89,7 @@ func Diff(baseConfig, deltaConfig Config) (Differences, error) {
 		return Differences{}, fmt.Errorf("error processing delta file: %v", err)
 	}
 
-	return Differences{Additions: additions, Modifications: modifications, Deletions: deletions}, nil
+	return Differences{Additions: additions, Modifications: modifications, Deletions: deletions, Unchanged: unchangedRows}, nil
 }
 
 func streamDifferences(baseFileDigest *FileDigest, digestChannel chan []Digest) chan message {
@@ -97,6 +105,9 @@ func streamDifferences(baseFileDigest *FileDigest, digestChannel chan []Digest) 
 					if baseValue != d.Value {
 						// Modification
 						msgChannel <- message{_type: modification, current: d.Source, original: base.SourceMap[d.Key]}
+					} else {
+						// Unchanged (追加)
+						msgChannel <- message{_type: unchanged, current: d.Source}
 					}
 					// delete from sourceMap so that at the end only deletions are left in base
 					delete(base.SourceMap, d.Key)
