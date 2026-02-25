@@ -77,6 +77,7 @@ Most suitable for csv files created from database tables`,
 			deltaFilename,
 			runeSeparator,
 			lazyQuotes,
+			ignoreColumnsCheck, // 追加
 		)
 
 		if err != nil {
@@ -127,6 +128,7 @@ var (
 	format                     string
 	separator                  string
 	lazyQuotes                 bool
+	ignoreColumnsCheck         bool // 追加
 )
 
 func init() {
@@ -141,6 +143,7 @@ func init() {
 
 	rootCmd.Flags().BoolVarP(&timed, "time", "", false, "Measure time")
 	rootCmd.Flags().BoolVar(&lazyQuotes, "lazyquotes", false, "allow unescaped quotes")
+	rootCmd.Flags().BoolVar(&ignoreColumnsCheck, "ignore-columns-check", false, "disable strict column count check per record")
 }
 
 func timeTrack(start time.Time, name string) {

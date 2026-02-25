@@ -61,6 +61,10 @@ func (e Engine) StreamDigests() (chan []Digest, chan error) {
 		reader := csv.NewReader(e.config.Reader)
 		reader.Comma = e.config.Separator
 		reader.LazyQuotes = e.config.LazyQuotes
+		// 追加: 設定が有効な場合のみ列数チェックを無効化する
+		if e.config.IgnoreColumnsCheck {
+			reader.FieldsPerRecord = -1
+		}
 		for {
 			lines, eofReached, err := getNextNLines(reader)
 
