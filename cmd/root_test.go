@@ -5,7 +5,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/aswinkarthik/csvdiff/pkg/digest"
+	"github.com/hizuheka/go-ObuCsvdiff/pkg/digest"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 )

@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/aswinkarthik/csvdiff/pkg/digest"
+	"github.com/hizuheka/go-ObuCsvdiff/pkg/digest"
 
 	"github.com/stretchr/testify/assert"
 )

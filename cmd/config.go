@@ -8,7 +8,7 @@ import (
 
 	"github.com/spf13/afero"
 
-	"github.com/aswinkarthik/csvdiff/pkg/digest"
+	"github.com/hizuheka/go-ObuCsvdiff/pkg/digest"
 )
 
 // Context is to store all command line Flags.
