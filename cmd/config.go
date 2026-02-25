@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"bufio"
 	"encoding/csv"
 	"fmt"
 	"io"
@@ -26,6 +27,7 @@ type Context struct {
 	separator              rune
 	lazyQuotes             bool
 	ignoreColumnsCheck     bool // 追加
+	rawSplit               bool // 追加
 }
 
 // NewContext can take all CLI flags and create a cmd.Context
@@ -43,13 +45,14 @@ func NewContext(
 	separator rune,
 	lazyQuotes bool,
 	ignoreColumnsCheck bool, // 追加
+	rawSplit bool, // 追加
 ) (*Context, error) {
-	baseRecordCount, err := getColumnsCount(fs, baseFilename, separator, lazyQuotes)
+	baseRecordCount, err := getColumnsCount(fs, baseFilename, separator, lazyQuotes, rawSplit)
 	if err != nil {
 		return nil, fmt.Errorf("error in base-file: %v", err)
 	}
 
-	deltaRecordCount, err := getColumnsCount(fs, deltaFilename, separator, lazyQuotes)
+	deltaRecordCount, err := getColumnsCount(fs, deltaFilename, separator, lazyQuotes, rawSplit)
 	if err != nil {
 		return nil, fmt.Errorf("error in delta-file: %v", err)
 	}
@@ -87,6 +90,7 @@ func NewContext(
 		separator:              separator,
 		lazyQuotes:             lazyQuotes,
 		ignoreColumnsCheck:     ignoreColumnsCheck, // 追加
+		rawSplit:               rawSplit,           // 追加
 	}
 
 	if err := ctx.validate(); err != nil {
@@ -184,21 +188,35 @@ func assertAll(elements []int, assertFn func(element int) bool) bool {
 	return true
 }
 
-func getColumnsCount(fs afero.Fs, filename string, separator rune, lazyQuotes bool) (int, error) {
+func getColumnsCount(fs afero.Fs, filename string, separator rune, lazyQuotes bool, rawSplit bool) (int, error) {
 	base, err := fs.Open(filename)
 	if err != nil {
 		return 0, err
 	}
 	defer base.Close()
-	csvReader := csv.NewReader(base)
-	csvReader.Comma = separator
-	csvReader.LazyQuotes = lazyQuotes
-	record, err := csvReader.Read()
-	if err != nil {
-		if err == io.EOF {
-			return 0, fmt.Errorf("unable to process headers from csv file. EOF reached. invalid CSV file")
+
+	var record []string
+	if rawSplit {
+		scanner := bufio.NewScanner(base)
+		if !scanner.Scan() {
+			err = scanner.Err()
+			if err == nil {
+				return 0, fmt.Errorf("unable to process headers from csv file. EOF reached")
+			}
+			return 0, err
 		}
-		return 0, err
+		record = strings.Split(scanner.Text(), string(separator))
+	} else {
+		csvReader := csv.NewReader(base)
+		csvReader.Comma = separator
+		csvReader.LazyQuotes = lazyQuotes
+		record, err = csvReader.Read()
+		if err != nil {
+			if err == io.EOF {
+				return 0, fmt.Errorf("unable to process headers from csv file. EOF reached. invalid CSV file")
+			}
+			return 0, err
+		}
 	}
 
 	return len(record), nil
@@ -215,6 +233,7 @@ func (c *Context) BaseDigestConfig() (digest.Config, error) {
 		Separator:          c.separator,
 		LazyQuotes:         c.lazyQuotes,
 		IgnoreColumnsCheck: c.ignoreColumnsCheck, // 追加
+		RawSplit:           c.rawSplit,           // 追加
 	}, nil
 }
 
@@ -229,6 +248,7 @@ func (c *Context) DeltaDigestConfig() (digest.Config, error) {
 		Separator:          c.separator,
 		LazyQuotes:         c.lazyQuotes,
 		IgnoreColumnsCheck: c.ignoreColumnsCheck, // 追加
+		RawSplit:           c.rawSplit,           // 追加
 	}, nil
 }
 

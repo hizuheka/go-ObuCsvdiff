@@ -78,6 +78,7 @@ Most suitable for csv files created from database tables`,
 			runeSeparator,
 			lazyQuotes,
 			ignoreColumnsCheck, // 追加
+			rawSplit,           // 追加
 		)
 
 		if err != nil {
@@ -129,6 +130,7 @@ var (
 	separator                  string
 	lazyQuotes                 bool
 	ignoreColumnsCheck         bool // 追加
+	rawSplit                   bool // 追加
 )
 
 func init() {
@@ -144,6 +146,7 @@ func init() {
 	rootCmd.Flags().BoolVarP(&timed, "time", "", false, "Measure time")
 	rootCmd.Flags().BoolVar(&lazyQuotes, "lazyquotes", false, "allow unescaped quotes")
 	rootCmd.Flags().BoolVar(&ignoreColumnsCheck, "ignore-columns-check", false, "disable strict column count check per record")
+	rootCmd.Flags().BoolVar(&rawSplit, "raw-split", false, "do not use standard CSV parser. uses raw string split (treats empty quotes as strings)")
 }
 
 func timeTrack(start time.Time, name string) {

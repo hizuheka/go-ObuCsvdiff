@@ -45,6 +45,7 @@ func TestRunContext(t *testing.T) {
 			',',
 			false,
 			false,
+			false,
 		)
 		assert.NoError(t, err)
 

@@ -27,13 +27,18 @@ func (p Positions) Join(csv []string, separator string) string {
 
 // String method converts to csv mapping to positions
 // escapes necessary characters
-func (p Positions) String(csv []string, separator rune) string {
+func (p Positions) String(csv []string, separator rune, rawSplit bool) string {
 	selectiveCsv := csv
 	if len(p) != 0 {
 		selectiveCsv = make([]string, 0, len(p))
 		for _, pos := range p {
 			selectiveCsv = append(selectiveCsv, csv[pos])
 		}
+	}
+
+	// rawSplitがtrueの場合は、単純にセパレータで結合する
+	if rawSplit {
+		return strings.Join(selectiveCsv, string(separator))
 	}
 
 	csvStr := strings.Builder{}

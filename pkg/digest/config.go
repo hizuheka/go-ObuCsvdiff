@@ -16,6 +16,7 @@ type Config struct {
 	Separator          rune
 	LazyQuotes         bool
 	IgnoreColumnsCheck bool // 追加
+	RawSplit           bool // 追加
 }
 
 // NewConfig creates an instance of Config struct.
@@ -27,6 +28,7 @@ func NewConfig(
 	separator rune,
 	lazyQuotes bool,
 	ignoreColumnsCheck bool, // 追加
+	rawSplit bool, // 追加
 ) *Config {
 	if len(includeColumns) == 0 {
 		includeColumns = valueColumns
@@ -40,5 +42,6 @@ func NewConfig(
 		Separator:          separator,
 		LazyQuotes:         lazyQuotes,
 		IgnoreColumnsCheck: ignoreColumnsCheck, // 追加
+		RawSplit:           rawSplit,           // 追加
 	}
 }

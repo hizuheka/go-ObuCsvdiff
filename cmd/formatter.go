@@ -74,17 +74,17 @@ func (f *Formatter) legacyJSON(diff digest.Differences) error {
 
 	additions := make([]string, 0, len(diff.Additions))
 	for _, addition := range diff.Additions {
-		additions = append(additions, includes.String(addition, f.ctx.separator))
+		additions = append(additions, includes.String(addition, f.ctx.separator, f.ctx.rawSplit))
 	}
 
 	modifications := make([]string, 0, len(diff.Modifications))
 	for _, modification := range diff.Modifications {
-		modifications = append(modifications, includes.String(modification.Current, f.ctx.separator))
+		modifications = append(modifications, includes.String(modification.Current, f.ctx.separator, f.ctx.rawSplit))
 	}
 
 	deletions := make([]string, 0, len(diff.Deletions))
 	for _, deletion := range diff.Deletions {
-		deletions = append(deletions, includes.String(deletion, f.ctx.separator))
+		deletions = append(deletions, includes.String(deletion, f.ctx.separator, f.ctx.rawSplit))
 	}
 
 	jsonDiff := jsonDifference{Additions: additions, Modifications: modifications, Deletions: deletions}
@@ -110,12 +110,12 @@ func (f *Formatter) json(diff digest.Differences) error {
 
 	additions := make([]string, 0, len(diff.Additions))
 	for _, addition := range diff.Additions {
-		additions = append(additions, includes.String(addition, f.ctx.separator))
+		additions = append(additions, includes.String(addition, f.ctx.separator, f.ctx.rawSplit))
 	}
 
 	deletions := make([]string, 0, len(diff.Deletions))
 	for _, deletion := range diff.Deletions {
-		deletions = append(deletions, includes.String(deletion, f.ctx.separator))
+		deletions = append(deletions, includes.String(deletion, f.ctx.separator, f.ctx.rawSplit))
 	}
 
 	type modification struct {
@@ -131,7 +131,7 @@ func (f *Formatter) json(diff digest.Differences) error {
 
 	modifications := make([]modification, 0, len(diff.Modifications))
 	for _, mods := range diff.Modifications {
-		m := modification{Original: includes.String(mods.Original, f.ctx.separator), Current: includes.String(mods.Current, f.ctx.separator)}
+		m := modification{Original: includes.String(mods.Original, f.ctx.separator, f.ctx.rawSplit), Current: includes.String(mods.Current, f.ctx.separator, f.ctx.rawSplit)}
 		modifications = append(modifications, m)
 	}
 
@@ -162,17 +162,17 @@ func (f *Formatter) rowMark(diff digest.Differences) error {
 
 	additions := make([]string, 0, len(diff.Additions))
 	for _, addition := range diff.Additions {
-		additions = append(additions, includes.String(addition, f.ctx.separator))
+		additions = append(additions, includes.String(addition, f.ctx.separator, f.ctx.rawSplit))
 	}
 
 	modifications := make([]string, 0, len(diff.Modifications))
 	for _, modification := range diff.Modifications {
-		modifications = append(modifications, includes.String(modification.Current, f.ctx.separator))
+		modifications = append(modifications, includes.String(modification.Current, f.ctx.separator, f.ctx.rawSplit))
 	}
 
 	deletions := make([]string, 0, len(diff.Deletions))
 	for _, deletion := range diff.Deletions {
-		deletions = append(deletions, includes.String(deletion, f.ctx.separator))
+		deletions = append(deletions, includes.String(deletion, f.ctx.separator, f.ctx.rawSplit))
 	}
 
 	for _, added := range additions {
@@ -200,16 +200,16 @@ func (f *Formatter) lineDiff(diff digest.Differences) error {
 
 	blue(f.stderr, "# Additions (%d)\n", len(diff.Additions))
 	for _, addition := range diff.Additions {
-		green(f.stdout, "+ %s\n", includes.String(addition, f.ctx.separator))
+		green(f.stdout, "+ %s\n", includes.String(addition, f.ctx.separator, f.ctx.rawSplit))
 	}
 	blue(f.stderr, "# Modifications (%d)\n", len(diff.Modifications))
 	for _, modification := range diff.Modifications {
-		red(f.stdout, "- %s\n", includes.String(modification.Original, f.ctx.separator))
-		green(f.stdout, "+ %s\n", includes.String(modification.Current, f.ctx.separator))
+		red(f.stdout, "- %s\n", includes.String(modification.Original, f.ctx.separator, f.ctx.rawSplit))
+		green(f.stdout, "+ %s\n", includes.String(modification.Current, f.ctx.separator, f.ctx.rawSplit))
 	}
 	blue(f.stderr, "# Deletions (%d)\n", len(diff.Deletions))
 	for _, deletion := range diff.Deletions {
-		red(f.stdout, "- %s\n", includes.String(deletion, f.ctx.separator))
+		red(f.stdout, "- %s\n", includes.String(deletion, f.ctx.separator, f.ctx.rawSplit))
 	}
 
 	return nil
@@ -243,7 +243,7 @@ func (f *Formatter) wordLevelDiffs(diff digest.Differences, deletionFormat, addi
 
 	_, _ = fmt.Fprintln(f.stderr, blue("# Additions (%d)", len(diff.Additions)))
 	for _, addition := range diff.Additions {
-		_, _ = fmt.Fprintln(f.stdout, green(additionFormat, includes.String(addition, f.ctx.separator)))
+		_, _ = fmt.Fprintln(f.stdout, green(additionFormat, includes.String(addition, f.ctx.separator, f.ctx.rawSplit)))
 	}
 
 	_, _ = fmt.Fprintln(f.stderr, blue("# Modifications (%d)", len(diff.Modifications)))
@@ -258,12 +258,12 @@ func (f *Formatter) wordLevelDiffs(diff digest.Differences, deletionFormat, addi
 				result = append(result, modification.Current[i])
 			}
 		}
-		_, _ = fmt.Fprintln(f.stdout, includes.String(result, f.ctx.separator))
+		_, _ = fmt.Fprintln(f.stdout, includes.String(result, f.ctx.separator, f.ctx.rawSplit))
 	}
 
 	_, _ = fmt.Fprintln(f.stderr, blue("# Deletions (%d)", len(diff.Deletions)))
 	for _, deletion := range diff.Deletions {
-		_, _ = fmt.Fprintln(f.stdout, red(deletionFormat, includes.String(deletion, f.ctx.separator)))
+		_, _ = fmt.Fprintln(f.stdout, red(deletionFormat, includes.String(deletion, f.ctx.separator, f.ctx.rawSplit)))
 	}
 
 	// 関数の一番最後に Unchanged の出力を追加
@@ -271,7 +271,7 @@ func (f *Formatter) wordLevelDiffs(diff digest.Differences, deletionFormat, addi
 		_, _ = fmt.Fprintln(f.stderr, blue("# Unchanged (%d)", len(diff.Unchanged)))
 		for _, unch := range diff.Unchanged {
 			// 一致する行は色や修飾子を付けずにそのまま出力
-			_, _ = fmt.Fprintln(f.stdout, includes.String(unch, f.ctx.separator))
+			_, _ = fmt.Fprintln(f.stdout, includes.String(unch, f.ctx.separator, f.ctx.rawSplit))
 		}
 	}
 

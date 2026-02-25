@@ -58,15 +58,24 @@ func (e Engine) StreamDigests() (chan []Digest, chan error) {
 
 	go func(digestChannel chan []Digest, errorChannel chan error) {
 		wg := &sync.WaitGroup{}
-		reader := csv.NewReader(e.config.Reader)
-		reader.Comma = e.config.Separator
-		reader.LazyQuotes = e.config.LazyQuotes
-		// 追加: 設定が有効な場合のみ列数チェックを無効化する
-		if e.config.IgnoreColumnsCheck {
-			reader.FieldsPerRecord = -1
+
+		// ▼ 追加・変更: 設定によってリーダーを切り替える
+		var lineReader LineReader
+		if e.config.RawSplit {
+			lineReader = newRawReader(e.config.Reader, e.config.Separator)
+		} else {
+			csvReader := csv.NewReader(e.config.Reader)
+			csvReader.Comma = e.config.Separator
+			csvReader.LazyQuotes = e.config.LazyQuotes
+			// 追加: 設定が有効な場合のみ列数チェックを無効化する
+			if e.config.IgnoreColumnsCheck {
+				csvReader.FieldsPerRecord = -1
+			}
+			lineReader = csvReader
 		}
+
 		for {
-			lines, eofReached, err := getNextNLines(reader)
+			lines, eofReached, err := getNextNLines(lineReader)
 
 			if err != nil {
 				wg.Wait()
