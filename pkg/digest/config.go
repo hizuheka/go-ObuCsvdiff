@@ -17,6 +17,7 @@ type Config struct {
 	LazyQuotes         bool
 	IgnoreColumnsCheck bool // 追加
 	RawSplit           bool // 追加
+	Sjis               bool // 追加
 }
 
 // NewConfig creates an instance of Config struct.
@@ -29,6 +30,7 @@ func NewConfig(
 	lazyQuotes bool,
 	ignoreColumnsCheck bool, // 追加
 	rawSplit bool, // 追加
+	sjis bool, // 追加
 ) *Config {
 	if len(includeColumns) == 0 {
 		includeColumns = valueColumns
@@ -43,5 +45,6 @@ func NewConfig(
 		LazyQuotes:         lazyQuotes,
 		IgnoreColumnsCheck: ignoreColumnsCheck, // 追加
 		RawSplit:           rawSplit,           // 追加
+		Sjis:               sjis,               // 追加
 	}
 }

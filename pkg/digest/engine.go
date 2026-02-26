@@ -2,8 +2,12 @@ package digest
 
 import (
 	"encoding/csv"
+	"io"
 	"runtime"
 	"sync"
+
+	"golang.org/x/text/encoding/japanese"
+	"golang.org/x/text/transform"
 )
 
 // Engine to create a FileDigest
@@ -59,12 +63,18 @@ func (e Engine) StreamDigests() (chan []Digest, chan error) {
 	go func(digestChannel chan []Digest, errorChannel chan error) {
 		wg := &sync.WaitGroup{}
 
+		// ▼ 追加: SJISフラグが有効な場合はデコーダーを挟む
+		var r io.Reader = e.config.Reader
+		if e.config.Sjis {
+			r = transform.NewReader(r, japanese.ShiftJIS.NewDecoder())
+		}
+
 		// ▼ 追加・変更: 設定によってリーダーを切り替える
 		var lineReader LineReader
 		if e.config.RawSplit {
-			lineReader = newRawReader(e.config.Reader, e.config.Separator)
+			lineReader = newRawReader(r, e.config.Separator) // e.config.Reader から r に変更
 		} else {
-			csvReader := csv.NewReader(e.config.Reader)
+			csvReader := csv.NewReader(r) // e.config.Reader から r に変更
 			csvReader.Comma = e.config.Separator
 			csvReader.LazyQuotes = e.config.LazyQuotes
 			// 追加: 設定が有効な場合のみ列数チェックを無効化する

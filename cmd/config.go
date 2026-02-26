@@ -8,6 +8,8 @@ import (
 	"strings"
 
 	"github.com/spf13/afero"
+	"golang.org/x/text/encoding/japanese"
+	"golang.org/x/text/transform"
 
 	"github.com/hizuheka/go-ObuCsvdiff/pkg/digest"
 )
@@ -28,6 +30,7 @@ type Context struct {
 	lazyQuotes             bool
 	ignoreColumnsCheck     bool // 追加
 	rawSplit               bool // 追加
+	sjis                   bool // 追加
 }
 
 // NewContext can take all CLI flags and create a cmd.Context
@@ -46,13 +49,14 @@ func NewContext(
 	lazyQuotes bool,
 	ignoreColumnsCheck bool, // 追加
 	rawSplit bool, // 追加
+	sjis bool, // 追加
 ) (*Context, error) {
-	baseRecordCount, err := getColumnsCount(fs, baseFilename, separator, lazyQuotes, rawSplit)
+	baseRecordCount, err := getColumnsCount(fs, baseFilename, separator, lazyQuotes, rawSplit, sjis)
 	if err != nil {
 		return nil, fmt.Errorf("error in base-file: %v", err)
 	}
 
-	deltaRecordCount, err := getColumnsCount(fs, deltaFilename, separator, lazyQuotes, rawSplit)
+	deltaRecordCount, err := getColumnsCount(fs, deltaFilename, separator, lazyQuotes, rawSplit, sjis)
 	if err != nil {
 		return nil, fmt.Errorf("error in delta-file: %v", err)
 	}
@@ -91,6 +95,7 @@ func NewContext(
 		lazyQuotes:             lazyQuotes,
 		ignoreColumnsCheck:     ignoreColumnsCheck, // 追加
 		rawSplit:               rawSplit,           // 追加
+		sjis:                   sjis,               // 追加
 	}
 
 	if err := ctx.validate(); err != nil {
@@ -188,16 +193,22 @@ func assertAll(elements []int, assertFn func(element int) bool) bool {
 	return true
 }
 
-func getColumnsCount(fs afero.Fs, filename string, separator rune, lazyQuotes bool, rawSplit bool) (int, error) {
+func getColumnsCount(fs afero.Fs, filename string, separator rune, lazyQuotes bool, rawSplit bool, sjis bool) (int, error) {
 	base, err := fs.Open(filename)
 	if err != nil {
 		return 0, err
 	}
 	defer base.Close()
 
+	// SJISの場合はデコーダーを挟む
+	var r io.Reader = base
+	if sjis {
+		r = transform.NewReader(base, japanese.ShiftJIS.NewDecoder())
+	}
+
 	var record []string
 	if rawSplit {
-		scanner := bufio.NewScanner(base)
+		scanner := bufio.NewScanner(r) // base から r に変更
 		if !scanner.Scan() {
 			err = scanner.Err()
 			if err == nil {
@@ -207,7 +218,7 @@ func getColumnsCount(fs afero.Fs, filename string, separator rune, lazyQuotes bo
 		}
 		record = strings.Split(scanner.Text(), string(separator))
 	} else {
-		csvReader := csv.NewReader(base)
+		csvReader := csv.NewReader(r) // base から r に変更
 		csvReader.Comma = separator
 		csvReader.LazyQuotes = lazyQuotes
 		record, err = csvReader.Read()
@@ -234,6 +245,7 @@ func (c *Context) BaseDigestConfig() (digest.Config, error) {
 		LazyQuotes:         c.lazyQuotes,
 		IgnoreColumnsCheck: c.ignoreColumnsCheck, // 追加
 		RawSplit:           c.rawSplit,           // 追加
+		Sjis:               c.sjis,               // 追加
 	}, nil
 }
 
@@ -249,6 +261,7 @@ func (c *Context) DeltaDigestConfig() (digest.Config, error) {
 		LazyQuotes:         c.lazyQuotes,
 		IgnoreColumnsCheck: c.ignoreColumnsCheck, // 追加
 		RawSplit:           c.rawSplit,           // 追加
+		Sjis:               c.sjis,               // 追加
 	}, nil
 }
 
