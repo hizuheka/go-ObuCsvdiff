@@ -87,7 +87,23 @@ Most suitable for csv files created from database tables`,
 		}
 		defer ctx.Close()
 
-		return runContext(ctx, os.Stdout, os.Stderr)
+		var outputStream io.Writer = os.Stdout
+
+		if outputFile != "" {
+			f, err := os.Create(outputFile)
+			if err != nil {
+				return fmt.Errorf("failed to create output file: %v", err)
+			}
+			defer f.Close() // 処理が終わったらファイルを閉じる
+
+			outputStream = f
+
+			// ファイル出力時はエスケープシーケンス(色付け)を無効にする
+			color.NoColor = true
+		}
+
+		// runContext に outputStream を渡す
+		return runContext(ctx, outputStream, os.Stderr)
 	},
 }
 
@@ -130,9 +146,10 @@ var (
 	format                     string
 	separator                  string
 	lazyQuotes                 bool
-	ignoreColumnsCheck         bool // 追加
-	rawSplit                   bool // 追加
-	sjis                       bool // 追加
+	ignoreColumnsCheck         bool   // 追加
+	rawSplit                   bool   // 追加
+	sjis                       bool   // 追加
+	outputFile                 string // 追加
 )
 
 func init() {
@@ -150,6 +167,7 @@ func init() {
 	rootCmd.Flags().BoolVar(&ignoreColumnsCheck, "ignore-columns-check", false, "disable strict column count check per record")
 	rootCmd.Flags().BoolVar(&rawSplit, "raw-split", false, "do not use standard CSV parser. uses raw string split (treats empty quotes as strings)")
 	rootCmd.Flags().BoolVar(&sjis, "sjis", false, "parse input files as Shift_JIS encoding")
+	rootCmd.Flags().StringVarP(&outputFile, "output", "", "", "Output file path(default is stdout)")
 }
 
 func timeTrack(start time.Time, name string) {
