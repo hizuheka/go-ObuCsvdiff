@@ -2,6 +2,7 @@ module github.com/hizuheka/go-ObuCsvdiff
 
 require (
 	github.com/cespare/xxhash v1.1.0
+	github.com/cespare/xxhash/v2 v2.3.0
 	github.com/fatih/color v1.7.0
 	github.com/spf13/afero v1.1.2
 	github.com/spf13/cobra v0.0.5

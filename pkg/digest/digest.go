@@ -5,7 +5,7 @@ import (
 	"runtime"
 	"sync"
 
-	"github.com/cespare/xxhash"
+	"github.com/cespare/xxhash/v2"
 )
 
 // Digest represents the binding of the key of each csv line
@@ -16,11 +16,47 @@ type Digest struct {
 	Source []string
 }
 
+// hashPool はハッシュオブジェクトを再利用するためのプールです
+var hashPool = sync.Pool{
+	New: func() interface{} {
+		return xxhash.New()
+	},
+}
+
+// calculateHash は新しい文字列を生成せずに直接ハッシュを計算します
+func calculateHash(csv []string, separator string, p Positions) uint64 {
+	h := hashPool.Get().(*xxhash.Digest)
+	h.Reset()
+	defer hashPool.Put(h)
+
+	// 指定されたポジションがない場合は行全体を対象にする
+	if len(p) == 0 {
+		for i, val := range csv {
+			_, _ = h.WriteString(val)
+			if i < len(csv)-1 {
+				_, _ = h.WriteString(separator)
+			}
+		}
+	} else {
+		// 指定されたポジションのみを対象にする
+		for i, pos := range p {
+			if pos < len(csv) {
+				_, _ = h.WriteString(csv[pos])
+			}
+			if i < len(p)-1 {
+				_, _ = h.WriteString(separator)
+			}
+		}
+	}
+	return h.Sum64()
+}
+
 // CreateDigest creates a Digest for each line of csv.
 // There will be one Digest per line
 func CreateDigest(csv []string, separator string, pKey Positions, pRow Positions) Digest {
-	key := xxhash.Sum64String(pKey.Join(csv, separator))
-	digest := xxhash.Sum64String(pRow.Join(csv, separator))
+	// ▼ 修正: Join を使わず、calculateHash で直接ハッシュを計算する
+	key := calculateHash(csv, separator, pKey)
+	digest := calculateHash(csv, separator, pRow)
 
 	return Digest{Key: key, Value: digest, Source: csv}
 }

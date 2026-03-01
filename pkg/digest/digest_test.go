@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/cespare/xxhash"
+	"github.com/cespare/xxhash/v2"
 	"github.com/hizuheka/go-ObuCsvdiff/pkg/digest"
 	"github.com/stretchr/testify/assert"
 )
